@@ -17,7 +17,7 @@ function assetEdits(e,form){
 }
 function editAsset(e){
  modal('Editar datos del activo',
- '<p class="muted">Modifica los datos del equipo o instrumental. Los cambios se guardan en este navegador.</p>'+
+ '<p class="muted">Modifica los datos del equipo o instrumental. Los cambios se guardan en el portal compartido.</p>'+
  input('Identificador del expediente (permanente)','fixedId','text',e.id,false).replace('name="fixedId"','name="fixedId" readonly')+
  '<p class="muted">El identificador mantiene el enlace y el QR del expediente. Puedes modificar el código de inventario de abajo.</p>'+
  input('Código de inventario','inventoryCode','text',e.inventoryCode||e.id,false)+
@@ -39,3 +39,4 @@ function editAsset(e){
  });
 }
 document.addEventListener('click',ev=>{if(!ev.target.closest('[data-edit-asset]'))return;const e=data.find(row=>row.id===new URLSearchParams(location.hash.slice(1)).get('equipo'));if(e)editAsset(e)});
+
