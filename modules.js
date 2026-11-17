@@ -24,13 +24,32 @@ function renderModule(kind){const c=moduleConfig[kind];$('#breadcrumb').textCont
 function renderModuleDetail(kind,r){const training=kind==='training';$('#content').innerHTML=`<button class="linkbtn back" data-module-back>← Volver a ${moduleConfig[kind].title.toLowerCase()}</button>`+heading(moduleConfig[kind].eyebrow,esc(r.name),`${moduleBadge(r.status)} ${moduleLate(r)?'<span class="badge red">Fecha vencida</span>':''}`,`<button class="primary" data-module-edit="${r.id}" data-kind="${kind}">Editar ${moduleConfig[kind].singular}</button>`)+`<div class="card"><div class="cardhead"><h2>${training?'Información de la sesión':'Información del proyecto'}</h2><span class="muted">Actualizado: ${fmt(r.updated)}</span></div><div class="cardbody meta">${[...(!training?[['Tipo de proyecto',r.projectType||'Sin clasificar']]:[]),[training?'Instructor / responsable':'Responsable',r.owner],['Sede / ubicación',r.location],...(training?[['Área',recordArea(r)],['Personal convocado',r.area]]:[['Área involucrada',r.area]]),[training?'Fecha programada':'Fecha compromiso',fmt(r.date)],...(training?[['Convocados',r.expected],['Asistentes',r.attended]]:[['Inicio',fmt(r.start)],['Avance',r.progress+'%']])].map(([k,v])=>`<div><small>${k}</small><b>${esc(v)}</b></div>`).join('')}</div><div class="cardbody module-description"><small class="muted">${training?'Objetivo y contenido':'Objetivo y alcance'}</small><p>${esc(r.description||'Sin descripción registrada.')}</p>${!training?`<div class="bar"><i style="width:${r.progress}%"></i></div>`:''}</div></div><div class="twocol"><div class="card"><div class="cardhead"><h2>${training?'Seguimiento de la capacitación':'Pendientes y acuerdos'}</h2><button class="linkbtn" data-module-note="${r.id}" data-kind="${kind}">＋ Agregar nota</button></div><div class="cardbody">${r.notes.length?[...r.notes].reverse().map(n=>`<div class="row"><div><b>${esc(n.owner)}</b><small>${fmt(n.date)}</small><p class="note-text">${esc(n.text)}</p></div></div>`).join(''):'<p class="muted">Registra acuerdos, resultados y próximos pasos con su responsable.</p>'}</div></div><div class="card"><div class="cardhead"><h2>Evidencias y documentos</h2><button class="linkbtn" data-module-file="${r.id}" data-kind="${kind}">＋ ${training?'Adjuntar PDF':'Agregar documento'}</button></div><div class="cardbody">${!training?projectDocuments(r):r.docs.length?r.docs.map(d=>`<div class="row"><div class="document-name"><b>${esc(d.name)}</b><small>${fmt(d.date)}</small></div><button class="linkbtn" data-pdf="${d.id}">Abrir ↗</button></div>`).join(''):`<p class="muted">${training?'Adjunta listas de asistencia, evaluaciones o constancias en PDF.':'Adjunta propuestas, minutas, planos o evidencias en PDF.'}</p>`}</div></div></div>`}
 function projectDocuments(r){
  const docs=r.docs||[];
- if(!docs.length)return '<p class="muted">Agrega los planos en PDF, permisos firmados y demás documentación de este proyecto. Cada archivo queda dentro de su expediente.</p>';
+ if(!docs.length)return '<p class="muted">Agrega planos y permisos en PDF, hojas de cálculo en Excel y demás documentación de este proyecto. Cada archivo queda dentro de su expediente.</p>';
  return '<p class="muted">Los archivos requieren sesión de administrador. El estado documental lo registra quien carga el archivo.</p>'+projectDocCategories.map(category=>{
  const group=docs.filter(d=>(projectDocCategories.includes(d.category)?d.category:'Otros')===category);
  if(!group.length)return '';
- return `<section class="project-doc-group"><h3>${esc(category)} (${group.length})</h3>${group.map(d=>`<div class="row"><div class="document-name"><b>${esc(d.title||d.name)}</b><small>${esc(d.name)} · ${fmt(d.documentDate||d.date)}</small><span class="badge">${esc(d.documentStatus||'Sin clasificar')}</span>${d.description?`<p class="note-text">${esc(d.description)}</p>`:''}</div><button class="linkbtn" data-pdf="${esc(d.id)}">Abrir PDF ↗</button></div>`).join('')}</section>`;
+ return `<section class="project-doc-group"><h3>${esc(category)} (${group.length})</h3>${group.map(d=>`<div class="row"><div class="document-name"><b>${esc(d.title||d.name)}</b><small>${esc(d.name)} · ${fmt(d.documentDate||d.date)}</small><span class="badge">${esc(d.documentStatus||'Sin clasificar')}</span>${d.description?`<p class="note-text">${esc(d.description)}</p>`:''}</div><button class="linkbtn" ${/\.xlsx?$/i.test(d.name)?'data-project-download':'data-pdf'}="${esc(d.id)}">${/\.xlsx?$/i.test(d.name)?'Descargar Excel ↓':'Abrir PDF ↗'}</button></div>`).join('')}</section>`;
  }).join('');
 }
+async function validateProjectFile(file){
+ if(!file||!file.size||file.size>20*1024*1024)throw Error('Selecciona un PDF o Excel de hasta 20 MB.');
+ const extension=String(file.name||'').split('.').pop().toLowerCase();
+ if(!['pdf','xlsx','xls'].includes(extension))throw Error('Solo se permiten archivos PDF, XLSX o XLS.');
+ if(extension==='pdf'){
+  if(await file.slice(0,5).text()!=='%PDF-')throw Error('El archivo debe ser un PDF válido.');
+ }else{
+  const bytes=new Uint8Array(await file.slice(0,8).arrayBuffer());
+  const signature=extension==='xlsx'?[0x50,0x4b,0x03,0x04]:[0xd0,0xcf,0x11,0xe0,0xa1,0xb1,0x1a,0xe1];
+  if(!signature.every((byte,index)=>bytes[index]===byte))throw Error('El contenido no coincide con el formato Excel seleccionado. Guarda el archivo como XLSX o XLS desde Excel.');
+ }
+}
+document.addEventListener('click',async ev=>{
+ const button=ev.target.closest('[data-project-download]');if(!button)return;
+ button.disabled=true;
+ try{const file=await fileGet(button.dataset.projectDownload);if(!file)throw Error('No se encontró el archivo.');download(file.name,file,file.type);}
+ catch(error){toast('No se pudo descargar: '+error.message);}
+ finally{button.disabled=false;}
+});
 function projectDocumentForm(r){
  modal('Agregar documento al proyecto',`<p><b>${esc(r.name)}</b></p>`+
  input('Nombre del documento','title')+
@@ -38,14 +57,13 @@ function projectDocumentForm(r){
  moduleSelect('Estado del documento','documentStatus',projectDocStates,'Borrador')+
  input('Fecha del documento','documentDate','date',today())+
  textarea('Descripción / versión','description','')+
- '<label>Archivo PDF<input name="file" type="file" accept="application/pdf,.pdf" required></label><p class="muted">Hasta 20 MB. Exporta los planos a PDF y adjunta los permisos firmados escaneados. Solo el administrador puede abrir el archivo.</p>',async f=>{
+ '<label>Archivo PDF o Excel<input name="file" type="file" accept=".pdf,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" required></label><p class="muted">PDF, XLSX o XLS · Hasta 20 MB. Los archivos Excel se descargan para abrirlos en tu computadora. Solo el administrador puede abrir el archivo.</p>',async f=>{
  const title=String(f.get('title')||'').trim(),category=f.get('category'),documentStatus=f.get('documentStatus'),documentDate=f.get('documentDate');
  if(!title)throw Error('Escribe el nombre del documento.');
  if(!projectDocCategories.includes(category)||!projectDocStates.includes(documentStatus))throw Error('Selecciona una categoría y un estado válidos.');
  if(!/^\d{4}-\d{2}-\d{2}$/.test(documentDate)||!validServiceDate(documentDate))throw Error('Indica una fecha válida.');
  const file=f.get('file');
- if(!file||!file.size||file.size>20*1024*1024)throw Error('Selecciona un PDF de hasta 20 MB.');
- if(await file.slice(0,5).text()!=='%PDF-')throw Error('El archivo debe ser un PDF válido.');
+ await validateProjectFile(file);
  const id=crypto.randomUUID();await filePut(id,file);
  updateRecord('projects',r.id,{docs:[...(r.docs||[]),{id,name:file.name,title,category,documentStatus,documentDate,description:String(f.get('description')||'').trim(),date:today()}]});
  });

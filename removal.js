@@ -31,8 +31,8 @@ function removalButtons(kind,r){
  if(kind==='inventory'){
   const area=content.querySelector('.heading');if(area){const b=document.createElement('button');b.type='button';b.className='remove-control';b.dataset.removeAsset=r.id;b.textContent='Eliminar activo';area.append(b);}
  }
- content.querySelectorAll('[data-preview-pdf],[data-pdf]').forEach(open=>{
-  const id=open.dataset.previewPdf||open.dataset.pdf;if(!(r.docs||[]).some(d=>d.id===id))return;
+ content.querySelectorAll('[data-preview-pdf],[data-pdf],[data-project-download]').forEach(open=>{
+  const id=open.dataset.previewPdf||open.dataset.pdf||open.dataset.projectDownload;if(!(r.docs||[]).some(d=>d.id===id))return;
   const b=document.createElement('button');b.type='button';b.className='linkbtn remove-control';b.dataset.removeDoc=id;b.dataset.removeScope=kind;b.dataset.removeParent=r.id;b.textContent='Eliminar documento';open.insertAdjacentElement('afterend',b);
  });
 }
