@@ -1,14 +1,15 @@
+let portalTrash=[];
 /* Shared portal persistence. Only the publishable API key belongs in this file. */
 const PortalCloud = (() => {
  'use strict';
  const api = 'https://iabapmeuipdglxjdwjnz.supabase.co';
  const publicKey = 'sb_publishable_0GcsKddGgeWWUBQ-ST21YQ_1K5_ANxR';
- const mutations = '[data-classify],[data-new],[data-move],[data-service],[data-doc],[data-edit-asset],[data-hospital-destination],[data-upload-qr],[data-switch-qr],[data-assign-order],[data-service-order],[data-schedule-order],[data-module-new],[data-module-edit],[data-module-note],[data-module-file]';
+ const mutations = '[data-open-trash],[data-remove-asset],[data-remove-doc],[data-restore-removed],[data-classify],[data-new],[data-move],[data-service],[data-doc],[data-edit-asset],[data-hospital-destination],[data-upload-qr],[data-switch-qr],[data-assign-order],[data-service-order],[data-schedule-order],[data-module-new],[data-module-edit],[data-module-note],[data-module-file]';
  let client, revision = 0, refreshing = false, authGeneration = 0;
  const state = {ready:false, admin:false, busy:false};
  const message = text => {document.querySelector('#cloud-status').textContent=text;};
- function snapshot(){return structuredClone({inventory:data,training:collections.training,projects:collections.projects,orderLinks});}
- function restore(payload){data=structuredClone(payload.inventory);collections.training=structuredClone(payload.training||[]);collections.projects=structuredClone(payload.projects||[]);orderLinks=structuredClone(payload.orderLinks||{});}
+ function snapshot(){return structuredClone({inventory:data,training:collections.training,projects:collections.projects,orderLinks,trash:portalTrash});}
+ function restore(payload){data=structuredClone(payload.inventory);collections.training=structuredClone(payload.training||[]);collections.projects=structuredClone(payload.projects||[]);orderLinks=structuredClone(payload.orderLinks||{});portalTrash=structuredClone(payload.trash||[]);}
  function assertAdmin(){if(!state.ready||!state.admin)throw Error('Inicia sesión con la cuenta administradora para editar.');}
  function applyAccess(){
   document.body.classList.toggle('portal-admin',state.admin);
@@ -66,6 +67,7 @@ const PortalCloud = (() => {
   // Fetch only referenced files; original GitHub documents stay in the repository.
   const ids=new Set();
   for(const list of [copy.inventory,copy.training,copy.projects])for(const item of list){for(const d of item.docs||[])if(d.id)ids.add(d.id);if(item.customQR?.id)ids.add(item.customQR.id);}
+  for(const entry of copy.trash||[]){if(entry.kind==='asset'){for(const doc of entry.record.docs||[])if(doc.id)ids.add(doc.id);if(entry.record.customQR?.id)ids.add(entry.record.customQR.id);}else if(entry.record.id)ids.add(entry.record.id);}
   for(const id of ids){const file=await getFile(id);files.push({key:id,name:file.name,type:file.type,size:file.size,dataUrl:await encode(file)});}
   return {format:'baak-browser-backup',version:2,createdAt:new Date().toISOString(),origin:location.origin,path:location.pathname,snapshot:copy,files,missingFileIds:[],localStorage:{},note:'Respaldo de datos compartidos. Los documentos originales de GitHub permanecen en el repositorio.'};
  }

@@ -26,3 +26,9 @@ Los archivos consumen almacenamiento de base de datos y ancho de banda (base64 a
 - Políticas: usuario ajeno, cero actualizaciones y cero adjuntos visibles; administrador, actualización autorizada y cuatro adjuntos visibles. Pruebas en transacciones revertidas.
 - La lectura pública del inventario se prueba contra la API real. Las pruebas de interfaz de inicio de sesión usan una sesión simulada; la contraseña real no se comparte con el desarrollador.
 - La comprobación de contraseñas filtradas está deshabilitada en la configuración actual de Supabase Auth; no se modificó el plan del proyecto.
+
+## Papelera (noviembre de 2026)
+
+La cuenta administradora puede quitar documentos adjuntos y activos completos con una confirmación. Se trasladan a `payload.trash` y dejan de formar parte de las listas e indicadores activos. Los archivos físicos y el historial se conservan para restaurarlos. Esta función es una baja reversible, no un borrado de información confidencial ni una liberación de espacio. Los metadatos conservan el mismo modelo de lectura del portal; los archivos permanecen restringidos al administrador.
+
+La papelera se incluye en el respaldo compartido. Un documento cuyo activo esté en la papelera se restaura después de recuperar su activo. Si un código ya está ocupado, la restauración se detiene para evitar duplicados. El trigger `preserve_portal_trash` conserva la papelera cuando una ventana antigua envía una instantánea sin ese campo. Las ventanas deben actualizarse para disponer de todos los controles nuevos.

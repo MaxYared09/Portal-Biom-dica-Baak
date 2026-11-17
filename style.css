@@ -10,3 +10,6 @@
 body:not(.portal-admin) :is([data-classify],[data-new],[data-move],[data-service],[data-doc],[data-edit-asset],[data-hospital-destination],[data-upload-qr],[data-switch-qr],[data-assign-order],[data-service-order],[data-schedule-order],[data-module-new],[data-module-edit],[data-module-note],[data-module-file],#cloud-backup){display:none!important}
 .account-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px}
 #login-dialog{width:min(460px,calc(100vw - 32px))}#login-form{padding:24px}#login-form label{display:block;margin:18px 0}#login-form input{display:block;width:100%;margin-top:8px}#login-error{color:#a02f2f}#cloud-status{display:block;padding:8px 0}#toast{max-width:min(650px,90vw);white-space:normal}
+
+body:not(.portal-admin) .remove-control,body:not(.portal-admin) #portal-trash{display:none!important}
+.remove-control{color:#a02f2f}#portal-trash{width:min(760px,calc(100vw - 32px));max-height:85vh;overflow:auto}#portal-trash .row{gap:16px}#content .row:has(.remove-control){flex-wrap:wrap;gap:12px}
